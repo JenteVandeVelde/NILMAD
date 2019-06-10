@@ -6,8 +6,10 @@ Compiled using anaconda2 and suplementory package simanneal (0.4.2)
 
 To use: 
 1) Initialize NILM using integers or using suplied interface 'NILMrun'
+
 1a) To start using the 'NILMrun' interface add all python files to the same map
 1b) Execute 'setup=NILMrun()'
 1c) Folow instructions given
+
 2) Use NILM.read to read a .xls or .csv file
 3) (Optional) Use one of the (four) analysis algorithms to compare the results to a reference (.xls) file
