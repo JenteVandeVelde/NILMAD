@@ -1,5 +1,6 @@
 # NILMAD
-modular OOP algorithm combining NILM and AD
+Unsupervised FHMM algortihm to disagregate a network with Type-I and/or Type-II appliances using Non-Intrusive Load Monitoring with aditional aide of several Anomaly Detection methods.
+The algortihm is build modular and object oriented in order to be more easely understood, adapted, and compared.
 
 Compiled using anaconda2 and suplementory package simanneal (0.4.2)
 
