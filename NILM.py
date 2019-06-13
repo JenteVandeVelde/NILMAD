@@ -64,14 +64,23 @@ class NILM:
     #1: Allows but one state change at any given moment 
     
     
-    def __init__(self, filterSize=3, minStatePoints=4, edgeDetectionNr=2,ground=None, edgeAnomalyNr=1, edgeDeviationNr=1, preClusterNr=3, optimizeClusterNr=1, optimizeStateNr=1):
+    def __init__(self, filterSize=3, minStatePoints=4, edgeDetectionNr=1, edgeDeviationNr=1,deviation=None,ground=None, edgeAnomalyNr=1, preClusterNr=3, optimizeClusterNr=1, optimizeStateNr=1):
         self.indexData=0
         self.dataWindow=[] #data window to execute edge detection
         self.dataAnomalies=[]
         self.total=None #sum of data in window, automaticly addapts to amount of values in dataPoint
         self.weightedAverage=None #sum of data in window, automaticly addapts to amount of values in dataPoint
         self.initialDeviation=[8,4]
-        self.deviation=[None,None,0,0] #average deviation (real and reactive measurement) if calculated over total past and amount of point used in its calculation
+        if edgeDeviationNr==0:
+            if deviation==None:
+                self.algorithmEdgeDeviation=1
+                self.deviation=[None,None,0,0]
+            else:
+                self.algorithmEdgeDeviation=edgeDeviationNr
+                self.deviation==deviation
+        else:
+            self.algorithmEdgeDeviation=edgeDeviationNr
+            self.deviation=[None,None,0,0] #average deviation (real and reactive measurement) if calculated over total past and amount of point used in its calculation
         if ground==None:
             self.ground=[None,None,0] #average value of unrecognised states (real and reactive measurement) if calculated over total past and amount of point used in its calculation
         else:
@@ -86,7 +95,7 @@ class NILM:
         self.plotFirstNetworkStateAmount=50
         self.allowedDeviation=0
         self.algorithmEdgeDetection=edgeDetectionNr
-        self.algorithmEdgeDeviation=edgeDeviationNr
+        
         self.algorithmEdgeAnomaly=edgeAnomalyNr
         self.algorithmEstimate=optimizeStateNr
         self.algorithmEstimateFull=2
@@ -103,7 +112,8 @@ class NILM:
         self.dataWindow=[] #data window to execute edge detection
         self.dataAnomalies=[]
         self.total=None #average of data in window, automaticly addapts to amount of values in dataPoint
-        self.deviation=[None,None,0,0] #average deviation (real and reactive measurement) if calculated over total past and amount of point used in calculation
+        if not self.algorithmEdgeDeviation==0:
+            self.deviation=[None,None,0,0] #average deviation (real and reactive measurement) if calculated over total past and amount of point used in calculation
         if len(self.ground)>2:
             self.ground=[None,None,0]
         self.indexStates=0
@@ -670,6 +680,7 @@ class NILM:
         return self.deviation[len(self.deviation)-1]
     
     #Edge detection algortihm used for calculating deviation (edge detection 2):
+# 0: Given deviation  
 # 1: Statistical average
 # 2: Simple average
     def updateDeviation(self,deviationRealPower,deviationReactivePower,points,algorithm=None):
