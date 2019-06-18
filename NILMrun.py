@@ -7,6 +7,7 @@ class NILM:
     self.step=1
     self.edgeDetectionNr=1
     self.edgeDeviationNr=1
+    self.filterSize=0
     print("This algortihm will aid you in the setup of the NILM algortihm.")
     print("The algortihm will give several existing options, answer using'setup.select(VAUE)'.")
     print("With VALUE being the integer (or sometimes other parameter) representing the selected option.")
@@ -41,6 +42,11 @@ class NILM:
       self.ReactivePowerDeviation=Value[1]
       self.edgeDeviationNr=0
       self.step=4
-    elif self.step==2:
+      print("Select size of median filter (0 to deactivate (default)):")
+    elif self.step==3:
       self.edgeDeviationNr=Value
       self.step=4
+      print("Select size of median filter (0 to deactivate (default)):")
+    elif self.step==3:
+      self.filterSize=Value
+      self.step=5
