@@ -12,6 +12,7 @@ class NILMrun:
     self.preClusterNr=4
     self.optimizeStateNr=6
     self.optimizeClusterNr=4
+    self.deviation=None
     self.ground=None
     self.fileType=None
     self.columns=None
@@ -49,7 +50,7 @@ class NILMrun:
         print("2: Simple average")
     elif self.step==2:
       if len(Value)==2:
-        self.PowerDeviation==[Value[0],Value[1]]
+        self.deviation==[Value[0],Value[1]]
         self.edgeDeviationNr=0
         self.step=4
         print("Select size of median filter (0 to deactivate (default))")
@@ -122,11 +123,11 @@ class NILMrun:
       if len(Value)==2
         self.ground=[Value[0],Value[1]]
         self.step=10
-        self.system=NILM(self.filterSize,self.minStatePoints,self.edgeDetectionNr,self.ground,self.edgeAnomalyNr,self.edgeDeviationNr, self.preClusterNr,self.optimizeClusterNr,self.optimizeStateNr)
+        self.system=NILM(self.filterSize,self.minStatePoints,self.edgeDetectionNr,self.edgeDeviationNr,self.deviation,self.ground,self.edgeAnomalyNr,self.preClusterNr,self.optimizeClusterNr,self.optimizeStateNr)
         print("Select is the format of the data file: 'XLS' (1) or 'CSV' (2):")
       elif Value==None:
         self.step=10
-        self.system=NILM(self.filterSize,self.minStatePoints,self.edgeDetectionNr,self.ground,self.edgeAnomalyNr,self.edgeDeviationNr, self.preClusterNr,self.optimizeClusterNr,self.optimizeStateNr)
+        self.system=NILM(self.filterSize,self.minStatePoints,self.edgeDetectionNr,self.edgeDeviationNr,self.deviation,self.ground,self.edgeAnomalyNr,self.preClusterNr,self.optimizeClusterNr,self.optimizeStateNr)
         print("Select is the format of the data file: 'XLS' (1) or 'CSV' (2):")
       else:
         print("Value not recognised")
