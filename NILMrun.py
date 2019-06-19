@@ -165,12 +165,6 @@ class NILMrun:
       self.step=14
       print("Select the name of the file with measurement data")
     elif self.step==14:
-      if Value==None:
-        print("Select the name of the file with measurement data:'setup.select('Name')'")
-      else:
+      if not Value==None:
         self.system.read(Value,self.columns,self.firstRow,self.fileType,self.finalRow)
-        
-        
-        
-        
-        
+      print("Select the name of the (next) file with measurement data:'setup.select('Name')'")
