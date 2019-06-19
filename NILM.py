@@ -318,28 +318,46 @@ class NILM:
         return self.average()[1]  
     
     #Edge detection algortihm used:
-# 1: Deviation from temporary data 
-# 2: Deviation from previously identified data (uses 1 when few data yet collected)
-# 3: Deviation from previously identified data (uses fixed deviation when few data yet collected)
+# 0: No edge detection used (Only recomended if the data has already been separated per steady state.
+# 1: Limit Value Edge Detection (Default)
+# 2: Limit Value Edge Detection in combination with a student T-test
+# 3: Statistical Edge Detection using local average and deviation
+# 4: Statistical Edge Detection using local average and deviation in combination with a student T-test
+# 5: Statistical Edge Detection using local average and global deviation
+# 6: Statistical Edge Detection using local average and global deviation in combination with a student T-test
+# 7: Statistical Edge Detection using local average and manual deviation
+# 8: Statistical Edge Detection using local average and manual deviation in combination with a student T-test
     def edgeDetection(self,index,algorithm=None):
         if algorithm==None:
             algorithm=self.algorithmEdgeDetection
         if (algorithm==1):
             return self.edgeDetection_1(index)
         elif (algorithm==2):
-            if self.deviation[0] == None:
-                return self.edgeDetection_1(index)
-            else:
-                return self.edgeDetection_2(index)
+            return self.edgeDetection_2(index)
         elif (algorithm==3):
-            if len(self.states)=<100:
-                return self.edgeDetection_3(index)
-            else:
-                return self.edgeDetection_2(index)
+            return self.edgeDetection_3(index,False)
         elif (algorithm==4):
-            return self.edgeDetection_4(index)
+            return self.edgeDetection_3(index,True)
         elif (algorithm==5):
-            return self.edgeDetection_5(index)
+            if self.deviation[0] == None:
+                return self.edgeDetection_3(index,False)
+            else:
+                return self.edgeDetection_4(index,False)
+        elif (algorithm==6):
+            if self.deviation[0] == None:
+                return self.edgeDetection_3(index,True)
+            else:
+                return self.edgeDetection_4(index,True)
+        elif (algorithm==7):
+            if len(self.states)=<100:
+                return self.edgeDetection_5(index,False)
+            else:
+                return self.edgeDetection_4(index,False)
+        elif (algorithm==8):
+            if len(self.states)=<100:
+                return self.edgeDetection_5(index,True)
+            else:
+                return self.edgeDetection_4(index,True)
         else:
             return 0
         
@@ -361,7 +379,7 @@ class NILM:
         return [realPower,reactivePower]
     
     # Deviation calculated as average deviation data in window
-    def edgeDetection_1(self,index):
+    def edgeDetection_3(self,index,tTest=True):
         #PRIMARY EDGE DETECTION
         
         #minAmount of points?
@@ -373,8 +391,12 @@ class NILM:
             #large/unlikely difference
             if (scipy.stats.norm(self.averageRealPower(), math.sqrt(standartDeviation)).pdf(realPower) * scipy.stats.norm(self.averageReactivePower(), math.sqrt(standartDeviation)).pdf(reactivePower))<.0001:
                 self.getDataPoint().setEdge()
-        
-        return self.edgeDetectionttest()
+        if tTest:
+            return self.edgeDetectionttest()
+        elif self.getDataPoint().getEdge():
+            return index-(self.dataWindow[0].getIndex())
+        else:
+            return self.getDataWindowLenght()
     
     def edgeDetectionttest(self):
         if(self.getDataWindowLenght()>=2*self.minStatePoints+max(self.filterSize,self.minStatePoints)):
@@ -394,7 +416,7 @@ class NILM:
         return self.getDataWindowLenght()
     
     # Deviation calculated as average deviation previous network states
-    def edgeDetection_2(self,index):
+    def edgeDetection_4(self,index,tTest=True):
         #print str(self.getDataWindowLenght()) + str(self.filterSize) + str(self.minStatePoints)
         if self.getDataWindowLenght()>=max(self.filterSize,self.minStatePoints):
             #Median Filter
@@ -412,10 +434,15 @@ class NILM:
                 if (scipy.stats.norm(self.averageRealPower(), self.deviationRealPower()).pdf(realPower) * scipy.stats.norm(self.averageReactivePower(),  self.deviationReactivePower()).pdf(reactivePower))<.0007:
                     self.getDataPoint().setEdge()
                     #print "Cumulative " + str(scipy.stats.norm(0,self.deviationRealPower()).cdf(-abs(np.median(numbersP)-self.averageRealPower())) * scipy.stats.norm(0,self.deviationReactivePower()).cdf(-abs(np.median(numbersQ)-self.averageReactivePower())))
-        return self.edgeDetectionttest()
+        if tTest:
+            return self.edgeDetectionttest()
+        elif self.getDataPoint().getEdge():
+            return index-(self.dataWindow[0].getIndex())
+        else:
+            return self.getDataWindowLenght()
     
     # Fixed ('initial') deviation
-    def edgeDetection_3(self,index):
+    def edgeDetection_5(self,index,tTest=True):
         #PRIMARY EDGE DETECTION
         
         #minAmount of points?
@@ -426,10 +453,15 @@ class NILM:
             #large/unlikely difference
             if (scipy.stats.norm(self.averageRealPower(), math.sqrt(self.initialDeviation[0])).pdf(realPower) * scipy.stats.norm(self.averageReactivePower(), math.sqrt(self.initialDeviation[1])).pdf(reactivePower))<.0005:
                 self.getDataPoint().setEdge()
-        return self.edgeDetectionttest()
+        if tTest:
+            return self.edgeDetectionttest()
+        elif self.getDataPoint().getEdge():
+            return index-(self.dataWindow[0].getIndex())
+        else:
+            return self.getDataWindowLenght()
     
     # Simple Edge detection 
-    def edgeDetection_4(self,index):
+    def edgeDetection_1(self,index):
         #minAmount of points?
         if self.getDataWindowLenght()>=max(2,self.filterSize,self.minStatePoints):
 
@@ -446,7 +478,7 @@ class NILM:
         return self.getDataWindowLenght()
     
     # Simple Edge detection tTest optimization
-    def edgeDetection_5(self,index):
+    def edgeDetection_2(self,index):
         #minAmount of points?
         if self.getDataWindowLenght()>=max(2,self.filterSize,self.minStatePoints):
 
