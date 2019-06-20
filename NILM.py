@@ -349,12 +349,12 @@ class NILM:
             else:
                 return self.edgeDetection_4(index,True)
         elif (algorithm==7):
-            if len(self.states)=<100:
+            if len(self.states)<=100:
                 return self.edgeDetection_5(index,False)
             else:
                 return self.edgeDetection_4(index,False)
         elif (algorithm==8):
-            if len(self.states)=<100:
+            if len(self.states)<=100:
                 return self.edgeDetection_5(index,True)
             else:
                 return self.edgeDetection_4(index,True)
