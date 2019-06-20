@@ -23,7 +23,7 @@ class NILMrun:
     print("With VALUE being the integer (or sometimes other parameter) representing the selected option.")
     print("Leaving the VALUE emty will result in the algortihm selecting the default option.")
     print("Using a VALUE that does not exist will lead to errors")
-    print("It is recommended to remain consistent with choices among the different steps(eg.: Average power VS Power difference)")
+    print("It is recommended to remain consistent with choices among the different steps (eg.: Average power VS Power difference)")
     print("")
     print("The first selection is the type of edge detection used:")
     print("0: No edge detection used (Only recomended if the data has already been separated per steady state.")
@@ -120,7 +120,7 @@ class NILMrun:
       print("Enter the background power present during all measurements: 'setup.select([RealPowerGround,ReactivePowerGround])'")
       print("Leaving this empty result in the algorithm incrementaly estimating these values (slows the algortihm down)")
     elif self.step==9:
-      if len(Value)==2
+      if len(Value)==2:
         self.ground=[Value[0],Value[1]]
         self.step=10
         self.system=NILM(self.filterSize,self.minStatePoints,self.edgeDetectionNr,self.edgeDeviationNr,self.deviation,self.ground,self.edgeAnomalyNr,self.preClusterNr,self.optimizeClusterNr,self.optimizeStateNr)
@@ -135,12 +135,12 @@ class NILMrun:
         print("Leaving this empty result in the algorithm incrementaly estimating these values (slows the algortihm down)")
     elif self.step==10:
       if Value='XLS' or Value==1:
-        self.fileType='XLS'
+        self.fileType=='XLS'
         self.step=11
         print("Suply columns in with measurement values are present: 'setup.select([RealPower,ReactivePower,Timestamp])'")
         print("TimeStamp is optional")
-      if Value='CSV' or Value==2:
-        self.fileType='CSV'
+      elif Value='CSV' or Value==2:
+        self.fileType=='CSV'
         self.step=11
         print("Suply columns in with measurement values are present: 'setup.select([RealPower,ReactivePower,Timestamp])'")
         print("TimeStamp is optional")
