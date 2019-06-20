@@ -1823,13 +1823,17 @@ class NILM:
         if algorithm==None:
             algorithm=self.algorithmUpdate
         if (algorithm==1):
-            return self.update_1()
+            return self.update_1(False)
         elif (algorithm==2):
-            return self.update_2()
+            return self.update_2(False)
+        elif (algorithm==3):
+            return self.update_1(True)
+        elif (algorithm==4):
+            return self.update_2(True)
         else:
             return None
     
-    def update_1(self):
+    def update_1(self,TypeII=True):
         #updateGround
         if len(self.ground)>2:
             real=0
@@ -1978,7 +1982,89 @@ class NILM:
                     appState.setApplianceProbabilities(durations)
                                
         # Check Type II
-        
+        if TypeII and len(self.appliances)>=2:
+            typeTwo=[]
+            for applianceNr in range(len(self.appliances)):
+                appliance=self.appliances[applianceNr]
+                for appState in appliance.getStates()[1:]:
+                    previouState=self.states[0]
+                    edgeCount=0
+                    missedEdgeCount=0
+                    for networkStateNr in range(1,len(self.states)):
+                        networkState=self.states[networkStateNr]
+                        
+                        if not networkState.getApplianceState(applianceNr)==previouState.getApplianceState(applianceNr):
+                            if previouState.getApplianceState(applianceNr)==appState:
+                                edgeCount+=1
+                                if networkState.isAnomaly("MissedEdge"+str(applianceNr))or networkState.isAnomaly("DualEdge"+str(applianceNr)):
+                                    missedEdgeCount+=1
+                            elif networkState.getApplianceState(applianceNr)==appState:
+                                edgeCount+=1
+                        previouState=networkState
+                    self.write( str(applianceNr)+": "+str(edgeCount) +" T2 "+str(missedEdgeCount))
+                    if  edgeCount>8 and missedEdgeCount>=max(edgeCount/8,4):
+                        found=False
+                        for element in typeTwo:
+                            if element[0]==appliance:
+                                element[1]+=missedEdgeCount
+                                element[2]+=edgeCount
+                                found=True
+                        if not found:
+                            typeTwo.append([appliance,missedEdgeCount,edgeCount])
+            
+            if len(typeTwo)>=2:
+                
+                for i1 in range(len(typeTwo)-1):
+                    applianceA=typeTwo[i1][0]
+                    applianceANr=applianceA.getIndex()
+                    for i2 in range(i1+1,len(typeTwo)):
+                        applianceB=typeTwo[i2][0]
+                        applianceBNr=applianceB.getIndex()
+                         #missedEdgeCountRef=(typeTwo[i1][1]+typeTwo[i2][1])
+                        missedEdgeCountRef=(min(typeTwo[i1][1],typeTwo[i2][1]*1.5)+min(typeTwo[i1][1]*1.5,typeTwo[i2][1]))
+                        #missedEdgeCountRef=(math.sqrt(typeTwo[i1][1]/2)+math.sqrt(typeTwo[i2][1]/2))**2
+                        edgeCountRef=typeTwo[i1][2]+typeTwo[i2][2]
+                        missedEdgeCountSuficient=missedEdgeCountRef*3/(edgeCountRef*4)
+                        self.write("TwoRef "+str(applianceANr)+" "+str(applianceBNr)+" : " + str(missedEdgeCountRef) + " / " + str(edgeCountRef)+ " > ")
+                        applianceStatesNewBest=None
+                        applianceStatesOld=[]
+                        for applianceState in applianceA.getStates():
+                            applianceStatesOld.append(applianceState) 
+                        applianceStatesNew=[]
+                        for applianceState in applianceB.getStates()[1:]:
+                            applianceStatesNew.append(applianceState) 
+                                  
+                        missedEdgeCount=self.estimateTypeTwoAdditive(applianceStatesOld,applianceStatesNew,missedEdgeCountSuficient)
+                        if missedEdgeCount < missedEdgeCountSuficient:
+                            missedEdgeCountSuficient=missedEdgeCount
+                            applianceStatesNewBest=applianceStatesNew
+                            
+                        if len(applianceB.getStates())==2:
+                            if len(applianceA.getStates())>2:
+                                [missedEdgeCountSuficient,applianceStatesNewBest]= self.updateTypeTwoAdditive_1(applianceA,applianceB, missedEdgeCountSuficient,applianceStatesNewBest)
+                            [missedEdgeCountSuficient,applianceStatesNewBest]= self.updateTypeTwoAdditive_2(applianceA,applianceB, missedEdgeCountSuficient,applianceStatesNewBest)
+                            [missedEdgeCountSuficient,applianceStatesNewBest]= self.updateTypeTwoAdditive_3(applianceA,applianceB, missedEdgeCountSuficient,applianceStatesNewBest)
+                        if len(applianceA.getStates())==2:
+                            if len(applianceB.getStates())>2:
+                                [missedEdgeCountSuficient,applianceStatesNewBest]= self.updateTypeTwoAdditive_1(applianceB,applianceA, missedEdgeCountSuficient,applianceStatesNewBest)
+                            [missedEdgeCountSuficient,applianceStatesNewBest]= self.updateTypeTwoAdditive_2(applianceB,applianceA, missedEdgeCountSuficient,applianceStatesNewBest)
+                            [missedEdgeCountSuficient,applianceStatesNewBest]= self.updateTypeTwoAdditive_3(applianceB,applianceA, missedEdgeCountSuficient,applianceStatesNewBest)
+                        
+                        if missedEdgeCountSuficient<missedEdgeCountRef*3/(edgeCountRef*4):
+                            applianceNewNr=applianceStatesNewBest[0].getIndexAppliance()
+                            
+                            for applianceState in list(reversed(applianceStatesNewBest)):
+                                self.appliances[applianceNewNr].removeApplianceState(applianceState.getIndex())
+                                if applianceB.getIndex()==applianceNewNr:
+                                    applianceOldNr=applianceA.getIndex()
+                                else:
+                                    applianceOldNr=applianceB.getIndex()
+                                self.appliances[applianceOldNr].addApplianceState(applianceState)
+                            print"TYPE II"
+                            self.estimateFull()
+                            self.update()
+                            self.plotNetworkStatesAdditive()
+                            return True    
         return None
     
     
@@ -2258,7 +2344,7 @@ class NILM:
                         appState.setApplianceProbabilities(durations)
                                
         # Check Type II
-        if len(self.appliances)>=2:
+        if TypeII and len(self.appliances)>=2:
             typeTwo=[]
             for applianceNr in range(len(self.appliances)):
                 appliance=self.appliances[applianceNr]
@@ -2287,7 +2373,7 @@ class NILM:
                                 found=True
                         if not found:
                             typeTwo.append([appliance,missedEdgeCount,edgeCount])
-
+            
             if len(typeTwo)>=2:
                 
                 for i1 in range(len(typeTwo)-1):
@@ -2493,27 +2579,29 @@ class NILM:
 
 
  #Check whether or not a new appliace can be identified
-# 1: DBSCAN: Cluster network states (remainder)
-# 2: DBSCAN: Cluster difference between consecutive network states
-# 3: K-Means: Cluster network states (remainder)
-# 4: Agglomerative: Cluster network states (compare networkstate to estimated value)
+# 1: K-Means: Cluster network states (remainder)
+# 2: K-Means: Cluster difference between consecutive network states
+# 3: DBSCAN: Cluster network states (remainder)
+# 4: DBSCAN: Cluster difference between consecutive network states
+# 5: Agglomerative: Cluster network states (compare networkstate to estimated value)
+# 6: Agglomerative: Cluster difference between consecutive network states
     def newAppliance(self,eps=4,min_samples=3,amountMin=8,pointsMin=900,VarianceMax=None,algorithm=None):
         if algorithm==None:
             algorithm=self.algorithmNewAppliance
         if not len(self.states)>10*amountMin:
             return False
         if (algorithm==1):
-            return self.newAppliance_1(eps,min_samples,amountMin,pointsMin,VarianceMax)
+            return self.newAppliance_1(10,25,pointsMin)
         elif (algorithm==2):
-            return self.newAppliance_2(eps,min_samples,amountMin,pointsMin,VarianceMax)
+            return self.newAppliance_2(10,25,pointsMin)
         elif (algorithm==3):
-            return self.newAppliance_3(10,25,pointsMin)
+            return self.newAppliance_3(eps,min_samples,amountMin,pointsMin,VarianceMax)
         elif (algorithm==4):
-            return self.newAppliance_4(10,25,pointsMin)
+            return self.newAppliance_4(eps,min_samples,amountMin,pointsMin,VarianceMax)
         elif (algorithm==5):
             return self.newAppliance_5(15,25,pointsMin)
         elif (algorithm==6):
-            return self.newAppliance_6(10,25,pointsMin)
+            return self.newAppliance_6(15,25,pointsMin)
         else:
             return None
     
@@ -2667,7 +2755,7 @@ class NILM:
                     return new
         return False
     # DBSCAN: Cluster network states (compare networkstate to estimated value)
-    def newAppliance_1(self,eps=0.5,min_samples=5,amountMin=5,pointsMin=300,VarianceMax=None): 
+    def newAppliance_3(self,eps=0.5,min_samples=5,amountMin=5,pointsMin=300,VarianceMax=None): 
         if VarianceMax==None:
             VarianceMax=(self.deviationRealPower()**2+self.deviationReactivePower()**2)*1000
         [X,Y,durations]=self.clusterData()
@@ -2687,7 +2775,7 @@ class NILM:
         return False
     
     # DBSCAN: Cluster additive (compare networkstate to previous networkState)
-    def newAppliance_2(self,eps=0.7,min_samples=10,amountMin=5,pointsMin=300,VarianceMax=None): 
+    def newAppliance_4(self,eps=0.7,min_samples=10,amountMin=5,pointsMin=300,VarianceMax=None): 
         if VarianceMax==None:
             VarianceMax=(self.deviationRealPower()**2+self.deviationReactivePower()**2)*100
         [X,Y,durations]=self.clusterDataAdditive()
@@ -2712,7 +2800,7 @@ class NILM:
         return False
     
      # K-Means: Cluster network states (compare networkstate to estimated value)
-    def newAppliance_3(self,n_clusters=3,amountMin=15,pointsMin=300,VarianceMax=None): 
+    def newAppliance_1(self,n_clusters=3,amountMin=15,pointsMin=300,VarianceMax=None): 
         if VarianceMax==None:
             VarianceMax=(self.deviationRealPower()**2+self.deviationReactivePower()**2)*100
         [X,Y,durations]=self.clusterData()
@@ -2734,7 +2822,7 @@ class NILM:
             top_cluster = np.argsort(-counts)[nr:nr+1][0]
         return False
     # K-Means: Cluster network states (compare networkstate to estimated value)
-    def newAppliance_4(self,n_clusters=3,amountMin=15,pointsMin=300,VarianceMax=None): 
+    def newAppliance_2(self,n_clusters=3,amountMin=15,pointsMin=300,VarianceMax=None): 
         if VarianceMax==None:
             VarianceMax=(self.deviationRealPower()**2+self.deviationReactivePower()**2)*100
         [X,Y,durations]=self.clusterDataAdditive()
