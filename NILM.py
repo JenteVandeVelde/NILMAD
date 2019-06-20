@@ -990,15 +990,22 @@ class NILM:
         plt.axis([0, 1750,-200, 1000])
         plt.show()
             
-            
-            
-            
-            
-            
-            
+
           
     #Estimates for the given (or all if no state is given) network state(s) the appliance state of each appliance 
-#1: Allows but one state change at any given moment 
+#1: Minimization of the average power of network states.
+#2: Minimization of the power difference between consecutive network states.
+#3: Assymetrical* minimization of the average power of network states.
+#4: Assymetrical* minimization of the power difference between consecutive network states.
+#5: Assymetrical* minimization of the power difference between consecutive network states with missed edge detection.
+#6: Assymetrical* minimization of the power difference between consecutive network states with missed edge and dual edge detection (Default).
+#7: Minimization of the probability according to average power (and deviation) of network states.
+#8: Minimization of the probability according to the power difference between consecutive network states.
+#9: Assymetrical* Minimization of the probability according to the power difference between consecutive network states with missed edge detection.
+#10: Assymetrical* Minimization of the probability according to the power difference between consecutive network states with missed edge and dual edge detection.
+#11: Minimization of the probability according to average power, deviation, and duration of network states.
+#12: Minimization of the probability according to average power, deviation, and duration of network states with dual edge detection.
+#* Assymetrical aproaches treat upward and downward power changes slightly diffent (diffent thresholds).
     def estimate(self,networkState=None,previousState=None,algorithm=None):
         sufficient=False
         if len(self.appliances)==0:
@@ -1151,7 +1158,7 @@ class NILM:
         return sufficient
     
     #Multiple state change, Cost in form of minimum improvement (allowed deviation) required
-    def estimate_3(self,networkState,previousState,allowedDeviation=0):
+    def estimate_4(self,networkState,previousState,allowedDeviation=0):
         if (allowedDeviation==0):
             allowedDeviation=0
             for appliance in self.appliances:
@@ -1185,7 +1192,7 @@ class NILM:
         return False
     
     #Diminished requirement on turning appliances off
-    def estimate_4(self,networkState,previousState,allowedDeviation=0):
+    def estimate_3(self,networkState,previousState,allowedDeviation=0):
         if networkState.getRealPower()>=previousState.getRealPower():
             return self.estimate_1(networkState,previousState,allowedDeviation)
         else:
@@ -1220,7 +1227,7 @@ class NILM:
             return sufficient
         
     #Highest probability 1 state change
-    def estimate_5(self,networkState,previousState,allowedDeviation=0,allowedPobability=0):
+    def estimate_11(self,networkState,previousState,allowedDeviation=0,allowedPobability=0):
         self.states[networkState.getIndex()].applianceStates=[]
         for applianceState in previousState.applianceStates:
             self.states[networkState.getIndex()].applianceStates.append(applianceState)
@@ -1282,7 +1289,7 @@ class NILM:
     
     
     #Highest probability 1 state change & Diminished requirement on turning appliances off
-    def estimate_6(self,networkState,previousState,allowedDeviation=0,allowedPobability=0):
+    def estimate_12(self,networkState,previousState,allowedDeviation=0,allowedPobability=0):
         if networkState.getRealPower()>=previousState.getRealPower():
             return self.estimate_5(networkState,previousState,allowedDeviation)
         else:
@@ -1476,7 +1483,7 @@ class NILM:
     
     
     #Simple ADDITIVE 1 state change+missed
-    def estimate_9(self,networkState,previousState=None,allowedDeviation=0,allowedProbability=0):
+    def estimate_5(self,networkState,previousState=None,allowedDeviation=0,allowedProbability=0):
         self.states[networkState.getIndex()].applianceStates=[]
         sufficient=5.61
         missed=[]
@@ -1585,7 +1592,7 @@ class NILM:
                         missed.append(self.appliances[applianceNr])
         return missed
     #Simple ADDITIVE 2 state change+missed
-    def estimate_10(self,networkState,previousState=None,allowedDeviation=0,allowedProbability=0):
+    def estimate_6(self,networkState,previousState=None,allowedDeviation=0,allowedProbability=0):
         self.states[networkState.getIndex()].applianceStates=[]
         sufficient=5.61
         missed=[]
@@ -1644,7 +1651,7 @@ class NILM:
             
         return sufficient<5.61
     #Closest ADDITIVE 2 state change+missed
-    def estimate_11(self,networkState,previousState=None,allowedDeviation=0,allowedProbability=0):
+    def estimate_9(self,networkState,previousState=None,allowedDeviation=0,allowedProbability=0):
         self.states[networkState.getIndex()].applianceStates=[]
         missed=[]
         if not previousState==None:
@@ -1752,7 +1759,7 @@ class NILM:
                         missed.append(self.appliances[applianceNr])
         return missed
     #Closest ADDITIVE 2 state change+missed
-    def estimate_12(self,networkState,previousState=None,allowedDeviation=0,allowedProbability=0):
+    def estimate_10(self,networkState,previousState=None,allowedDeviation=0,allowedProbability=0):
         self.states[networkState.getIndex()].applianceStates=[]
         missed=[]
         if not previousState==None:
