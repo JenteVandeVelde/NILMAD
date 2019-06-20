@@ -520,10 +520,16 @@ class NILM:
                 return self.anomalyFilter_4(data,alowedProbability,final)
             else:
                 return self.anomalyFilter_5(data,alowedProbability,final)
+        elif (algorithm==6):
+            if (self.deviationRealPower() == None) or len(data)>self.deviationWeight():
+                return self.anomalyFilter_4(data,alowedProbability,final)
+            else:
+                return self.anomalyFilter_6(data,alowedProbability,final)
         else:
             data=[tempDataPoint.getValues()[0:max(2,len(tempDataPoint.getValues())-1)]for tempDataPoint in data]
             return [data,0]
-        
+    
+    # 1: Deviation from temporary data 
     def anomalyFilter_1(self,dataPoints,alowedProbability,final):
         data=[dataPoint.getValues()[0:max(2,len(dataPoint.getValues())-1)]for dataPoint in dataPoints]
         completed=False
@@ -548,6 +554,7 @@ class NILM:
                 completed=True
             lenght=len(data)
         return [data,initialLenght-lenght]
+    
     # 4: Deviation from temporary data & minimalDeviation
     def anomalyFilter_4(self,dataPoints,alowedProbability,final):
         data=[dataPoint.getValues()[0:max(2,len(dataPoint.getValues())-1)]for dataPoint in dataPoints]
@@ -576,6 +583,7 @@ class NILM:
                 completed=True
             lenght=len(data)
         return [data,initialLenght-lenght]
+    # 2: Deviation from identified data
     def anomalyFilter_2(self,dataPoints,alowedProbability,final):
         data=[dataPoint.getValues()[0:max(2,len(dataPoint.getValues())-1)]for dataPoint in dataPoints]
         dataList=np.array(data).T.tolist()
@@ -602,7 +610,35 @@ class NILM:
                 completed=True
             lenght=len(data)
         return [data,initialLenght-lenght]
-    
+    # 5: Deviation from identified data & minimalDeviation
+    def anomalyFilter_5(self,dataPoints,alowedProbability,final):
+        data=[dataPoint.getValues()[0:max(2,len(dataPoint.getValues())-1)]for dataPoint in dataPoints]
+        completed=False
+        initialLenght=len(data)
+        lenght=initialLenght
+        while not completed:
+            dataList=np.array(data).T.tolist()
+            averages=[np.average(dataList[i])for i in range(len(dataList))]
+            deviations=[max(self.deviationRealPower(),2),max(self.deviationReactivePower(),2)]
+            valueNr=0
+            dataPointNrs=range(len(data))
+            while valueNr <len(data):
+                values=data[valueNr]
+                if (min(scipy.stats.norm(0,deviations[i]).cdf(-abs(values[i]-averages[i])) for i in range(len(values)))<alowedProbability):
+                    if final:
+                        dataPointNr=dataPointNrs.pop(valueNr)
+                        dataPoint=dataPoints[dataPointNr]
+                        self.dataAnomalies.append(dataPoint)
+                        self.printFileAnomalies.write(datetime.datetime.utcfromtimestamp((dataPoint.getDayTime() - 25569) * 86400.0).strftime('%d/%m/%Y %H:%M:%S')+"\n")
+                    data.remove(values)
+                    
+                else:
+                    valueNr+=1
+            if len(data)==lenght or len(data)==0:
+                completed=True
+            lenght=len(data)
+        return [data,initialLenght-lenght]
+    # 3: Deviation from temporary and identified data & minimalDeviation
     def anomalyFilter_3(self,dataPoints,alowedProbability,final):
         data=[dataPoint.getValues()[0:max(2,len(dataPoint.getValues())-1)]for dataPoint in dataPoints]
         completed=False
@@ -629,7 +665,8 @@ class NILM:
                 completed=True
             lenght=len(data)
         return [data,initialLenght-lenght]
-    def anomalyFilter_5(self,dataPoints,alowedProbability,final):
+    # 6: Deviation from temporary and identified data 
+    def anomalyFilter_6(self,dataPoints,alowedProbability,final):
         data=[dataPoint.getValues()[0:max(2,len(dataPoint.getValues())-1)]for dataPoint in dataPoints]
         completed=False
         initialLenght=len(data)
